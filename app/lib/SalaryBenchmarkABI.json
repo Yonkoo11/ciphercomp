@@ -1,0 +1,383 @@
+[
+  {
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "got",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "expected",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidEncryptedInput",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "int32",
+        "name": "value",
+        "type": "int32"
+      }
+    ],
+    "name": "SecurityZoneOutOfBounds",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "roleKey",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "bucket",
+        "type": "uint8"
+      }
+    ],
+    "name": "PercentileRequested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "roleKey",
+        "type": "bytes32"
+      }
+    ],
+    "name": "RoleConfigured",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "roleKey",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalCount",
+        "type": "uint256"
+      }
+    ],
+    "name": "SalarySubmitted",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MIN_SAMPLE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "NUM_BUCKETS",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "role",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "location",
+        "type": "string"
+      },
+      {
+        "internalType": "uint64[8]",
+        "name": "boundaries",
+        "type": "uint64[8]"
+      }
+    ],
+    "name": "configureRole",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "role",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "location",
+        "type": "string"
+      }
+    ],
+    "name": "getBoundaries",
+    "outputs": [
+      {
+        "internalType": "uint64[8]",
+        "name": "",
+        "type": "uint64[8]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "role",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "location",
+        "type": "string"
+      },
+      {
+        "internalType": "uint8",
+        "name": "bucket",
+        "type": "uint8"
+      }
+    ],
+    "name": "getPercentileResult",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "count",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bool",
+        "name": "ready",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "role",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "location",
+        "type": "string"
+      }
+    ],
+    "name": "getRoleKey",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "hasSubmitted",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "role",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "location",
+        "type": "string"
+      }
+    ],
+    "name": "isConfigured",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "role",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "location",
+        "type": "string"
+      },
+      {
+        "internalType": "uint8",
+        "name": "bucket",
+        "type": "uint8"
+      }
+    ],
+    "name": "requestPercentile",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "roleConfigs",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "initialized",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "ctHash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "securityZone",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "utype",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct InEuint64",
+        "name": "encSalary",
+        "type": "tuple"
+      },
+      {
+        "internalType": "string",
+        "name": "role",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "location",
+        "type": "string"
+      }
+    ],
+    "name": "submitSalary",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "totalSubmissions",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]
