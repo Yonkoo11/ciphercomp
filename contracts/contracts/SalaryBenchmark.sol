@@ -36,7 +36,7 @@ contract SalaryBenchmark {
         string calldata role,
         string calldata location
     ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(role, location));
+        return keccak256(abi.encode(role, location));
     }
 
     function configureRole(

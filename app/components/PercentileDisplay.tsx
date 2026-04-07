@@ -1,19 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useWaitForTransactionReceipt } from "wagmi";
+import { useState, useEffect, useCallback } from "react";
+import { usePublicClient } from "wagmi";
 import {
   useSalaryBenchmark,
-  usePercentileResult,
   useRoleSubmissions,
   useHasSubmitted,
 } from "../hooks/useSalaryBenchmark";
 import { getBoundaries, formatSalary } from "../lib/roles";
-import { MIN_SAMPLE } from "../lib/contract";
+import { SALARY_BENCHMARK_ADDRESS, SALARY_BENCHMARK_ABI, MIN_SAMPLE, NUM_BUCKETS } from "../lib/contract";
 
 interface PercentileDisplayProps {
   role: string;
   location: string;
+}
+
+interface BucketResult {
+  count: number;
+  percentile: number;
 }
 
 export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
@@ -21,62 +25,140 @@ export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
   const { total } = useRoleSubmissions(role, location);
   const { hasSubmitted } = useHasSubmitted(role, location);
   const boundaries = getBoundaries(role, location);
+  const publicClient = usePublicClient();
 
-  const [selectedBucket, setSelectedBucket] = useState<number | null>(null);
-  const [requesting, setRequesting] = useState(false);
-  const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
+  const [results, setResults] = useState<Record<number, BucketResult>>({});
+  const [requesting, setRequesting] = useState<number | null>(null);
+  const [polling, setPolling] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [decryptRequested, setDecryptRequested] = useState(false);
-
-  useWaitForTransactionReceipt({ hash: txHash });
-
-  const { count, ready, refetch } = usePercentileResult(
-    role,
-    location,
-    selectedBucket ?? 0
-  );
-
-  // Poll for decryption result
-  useEffect(() => {
-    if (!decryptRequested || ready) return;
-    const interval = setInterval(() => refetch(), 3000);
-    return () => clearInterval(interval);
-  }, [decryptRequested, ready, refetch]);
-
-  async function handleRequestPercentile(bucket: number) {
-    setSelectedBucket(bucket);
-    setRequesting(true);
-    setError(null);
-    setDecryptRequested(false);
-
-    try {
-      const hash = await requestPercentile(role, location, bucket);
-      setTxHash(hash);
-      setDecryptRequested(true);
-    } catch (err: any) {
-      setError(err?.shortMessage || err?.message || "Failed to request");
-    } finally {
-      setRequesting(false);
-    }
-  }
-
-  if (!role || !location || !boundaries) return null;
 
   const totalNum = Number(total ?? 0);
   const canSeeResults = totalNum >= MIN_SAMPLE && hasSubmitted;
 
+  // Poll a specific bucket for decryption result
+  const pollBucket = useCallback(
+    async (bucket: number) => {
+      if (!publicClient) return;
+      try {
+        const data = await publicClient.readContract({
+          address: SALARY_BENCHMARK_ADDRESS,
+          abi: SALARY_BENCHMARK_ABI as any,
+          functionName: "getPercentileResult",
+          args: [role, location, bucket],
+        });
+        const [count, ready] = data as [bigint, boolean];
+        if (ready && totalNum > 0) {
+          const countNum = Number(count);
+          setResults((prev) => ({
+            ...prev,
+            [bucket]: {
+              count: countNum,
+              percentile: Math.round((countNum / totalNum) * 100),
+            },
+          }));
+          setPolling(null);
+          return true;
+        }
+        return false;
+      } catch {
+        return false;
+      }
+    },
+    [publicClient, role, location, totalNum]
+  );
+
+  // Polling effect — only runs for the specific bucket being decrypted
+  useEffect(() => {
+    if (polling === null) return;
+    const bucket = polling;
+    let active = true;
+
+    const interval = setInterval(async () => {
+      if (!active) return;
+      const done = await pollBucket(bucket);
+      if (done && active) {
+        clearInterval(interval);
+      }
+    }, 3000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [polling, pollBucket]);
+
+  async function handleRequestPercentile(bucket: number) {
+    // If we already have this result, don't re-request
+    if (results[bucket]) return;
+
+    setRequesting(bucket);
+    setError(null);
+
+    try {
+      await requestPercentile(role, location, bucket);
+      setPolling(bucket);
+    } catch (err: any) {
+      setError(err?.shortMessage || err?.message || "Failed to request");
+    } finally {
+      setRequesting(null);
+    }
+  }
+
+  // Request all buckets at once
+  async function handleRequestAll() {
+    setError(null);
+    for (let i = 0; i < NUM_BUCKETS; i++) {
+      if (results[i]) continue;
+      try {
+        setRequesting(i);
+        await requestPercentile(role, location, i);
+        // Start polling last requested bucket — earlier ones will resolve naturally
+      } catch (err: any) {
+        setError(err?.shortMessage || err?.message || "Failed on bucket " + (i + 1));
+        break;
+      }
+    }
+    setRequesting(null);
+    // Poll all unrequested buckets
+    setPolling(0); // will trigger polling effect
+  }
+
+  // Reset results when role/location changes
+  useEffect(() => {
+    setResults({});
+    setPolling(null);
+    setError(null);
+  }, [role, location]);
+
+  if (!role || !location || !boundaries) return null;
+
+  const allResolved = Object.keys(results).length === NUM_BUCKETS;
+
   return (
     <div className="card-glow rounded-xl bg-cipher-surface border border-cipher-border p-6 sm:p-8 animate-fade-up">
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-1">Salary Distribution</h2>
-        <p className="text-cipher-muted text-sm">
-          {role} in {location}
-          {totalNum > 0 && (
-            <span className="ml-2 text-cipher-accent">
-              ({totalNum} submission{totalNum !== 1 ? "s" : ""})
-            </span>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold mb-1">Salary Distribution</h2>
+            <p className="text-cipher-muted text-sm">
+              {role} in {location}
+              {totalNum > 0 && (
+                <span className="ml-2 text-cipher-accent">
+                  ({totalNum} submission{totalNum !== 1 ? "s" : ""})
+                </span>
+              )}
+            </p>
+          </div>
+          {canSeeResults && !allResolved && (
+            <button
+              onClick={handleRequestAll}
+              disabled={requesting !== null}
+              className="px-3 py-1.5 text-xs font-medium bg-cipher-accent/10 text-cipher-accent rounded-lg border border-cipher-accent/20 hover:bg-cipher-accent/20 transition-colors disabled:opacity-40"
+            >
+              {requesting !== null ? "Requesting..." : "Reveal All"}
+            </button>
           )}
-        </p>
+        </div>
       </div>
 
       {!canSeeResults ? (
@@ -109,56 +191,65 @@ export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
       ) : (
         <div className="space-y-2">
           {boundaries.map((boundary, i) => {
-            const isSelected = selectedBucket === i;
-            const hasResult = isSelected && ready && count !== undefined;
-            const percentile = hasResult
-              ? Math.round((Number(count) / totalNum) * 100)
-              : null;
+            const result = results[i];
+            const isRequesting = requesting === i;
+            const isPolling = polling === i && !result;
 
             return (
               <button
                 key={i}
                 onClick={() => handleRequestPercentile(i)}
-                disabled={requesting}
+                disabled={isRequesting || !!result}
                 className={`w-full text-left p-3 rounded-lg border transition-all ${
-                  isSelected
-                    ? "border-cipher-accent/30 bg-cipher-accent/5"
+                  result
+                    ? "border-cipher-accent/20 bg-cipher-accent/5"
                     : "border-cipher-border/50 bg-cipher-bg/50 hover:border-cipher-border"
-                } ${requesting ? "opacity-50 cursor-wait" : ""}`}
+                } ${isRequesting ? "opacity-50 cursor-wait" : ""} ${
+                  result ? "cursor-default" : ""
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs text-cipher-muted font-mono">
-                      Bucket {i + 1}
-                    </span>
-                    <span className="ml-2 text-sm">
                       {formatSalary(boundary)}+
                     </span>
                   </div>
 
-                  {isSelected && decryptRequested && !ready && (
-                    <span className="text-xs text-cipher-yellow animate-pulse">
-                      Decrypting...
+                  {isRequesting && (
+                    <span className="text-xs text-cipher-yellow">
+                      Requesting...
                     </span>
                   )}
 
-                  {hasResult && (
+                  {isPolling && (
+                    <span className="text-xs text-cipher-yellow animate-pulse">
+                      Decrypting on Fhenix...
+                    </span>
+                  )}
+
+                  {result && (
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-cipher-accent">
-                        {percentile}%
+                      <span className="text-sm font-mono text-cipher-accent font-semibold">
+                        {result.percentile}%
                       </span>
                       <span className="text-xs text-cipher-muted">
-                        ({Number(count)}/{totalNum} earn this or more)
+                        ({result.count}/{totalNum})
                       </span>
                     </div>
                   )}
+
+                  {!result && !isRequesting && !isPolling && (
+                    <span className="text-xs text-cipher-muted/50">
+                      Click to reveal
+                    </span>
+                  )}
                 </div>
 
-                {hasResult && (
+                {result && (
                   <div className="mt-2 h-1.5 rounded-full bg-cipher-bg overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cipher-accent to-cipher-green transition-all duration-500"
-                      style={{ width: `${percentile}%` }}
+                      className="h-full rounded-full bg-gradient-to-r from-cipher-accent to-cipher-green transition-all duration-700"
+                      style={{ width: `${result.percentile}%` }}
                     />
                   </div>
                 )}

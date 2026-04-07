@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAccount, useWaitForTransactionReceipt } from "wagmi";
 import { useCofhe } from "../hooks/useCofhe";
 import {
@@ -26,15 +26,23 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   const roles = getRoleNames();
   const locations = role ? getLocationsForRole(role) : [];
-  const { hasSubmitted } = useHasSubmitted(role, location);
+  const { hasSubmitted, refetch: refetchSubmitted } = useHasSubmitted(role, location);
   const { total, refetch: refetchTotal } = useRoleSubmissions(role, location);
 
   const { isLoading: txPending, isSuccess: txConfirmed } =
     useWaitForTransactionReceipt({ hash: txHash });
+
+  // Wait for tx confirmation before notifying parent and refreshing state
+  useEffect(() => {
+    if (txConfirmed && role && location) {
+      refetchTotal();
+      refetchSubmitted();
+      onSubmitted(role, location);
+    }
+  }, [txConfirmed]); // intentionally minimal deps — fires once on confirm
 
   const salaryNum = parseInt(salary.replace(/,/g, ""), 10);
   const validSalary = !isNaN(salaryNum) && salaryNum >= 10000 && salaryNum <= 1000000;
@@ -46,7 +54,8 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
     location &&
     validSalary &&
     !hasSubmitted &&
-    !submitting;
+    !submitting &&
+    !txPending;
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -57,9 +66,7 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
       const encrypted = await encryptSalary(BigInt(salaryNum));
       const hash = await submitSalary(encrypted, role, location);
       setTxHash(hash);
-      setSuccess(true);
-      refetchTotal();
-      onSubmitted(role, location);
+      // Don't call onSubmitted here — wait for tx receipt in useEffect above
     } catch (err: any) {
       setError(err?.shortMessage || err?.message || "Transaction failed");
     } finally {
@@ -100,7 +107,7 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
           onChange={(e) => {
             setRole(e.target.value);
             setLocation("");
-            setSuccess(false);
+            setTxHash(undefined);
           }}
           className="w-full bg-cipher-bg border border-cipher-border rounded-lg px-4 py-2.5 text-sm focus:border-cipher-accent/50 transition-colors appearance-none"
         >
@@ -122,7 +129,7 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
           value={location}
           onChange={(e) => {
             setLocation(e.target.value);
-            setSuccess(false);
+            setTxHash(undefined);
           }}
           disabled={!role}
           className="w-full bg-cipher-bg border border-cipher-border rounded-lg px-4 py-2.5 text-sm focus:border-cipher-accent/50 transition-colors appearance-none disabled:opacity-40"
@@ -148,10 +155,7 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
           <input
             type="number"
             value={salary}
-            onChange={(e) => {
-              setSalary(e.target.value);
-              setSuccess(false);
-            }}
+            onChange={(e) => setSalary(e.target.value)}
             placeholder="120000"
             min={10000}
             max={1000000}
@@ -200,8 +204,17 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
         </div>
       )}
 
+      {/* Tx pending */}
+      {txPending && (
+        <div className="mb-4 p-3 rounded-lg bg-cipher-accent/5 border border-cipher-accent/10">
+          <p className="text-sm text-cipher-accent">
+            Transaction submitted. Waiting for confirmation...
+          </p>
+        </div>
+      )}
+
       {/* Success */}
-      {success && txConfirmed && (
+      {txConfirmed && (
         <div className="mb-4 p-3 rounded-lg bg-cipher-green/5 border border-cipher-green/10">
           <p className="text-sm text-cipher-green">
             Salary encrypted and submitted. Your data is private.
@@ -215,15 +228,17 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
         disabled={!canSubmit}
         className="w-full py-3 px-4 rounded-lg font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-cipher-accent/10 text-cipher-accent border border-cipher-accent/20 hover:bg-cipher-accent/20 active:scale-[0.98]"
       >
-        {submitting || txPending
-          ? "Encrypting & Submitting..."
-          : !isConnected
-            ? "Connect Wallet First"
-            : cofheState !== "ready"
-              ? "Waiting for Encryption..."
-              : hasSubmitted
-                ? "Already Submitted"
-                : "Encrypt & Submit Salary"}
+        {submitting
+          ? "Encrypting..."
+          : txPending
+            ? "Confirming Transaction..."
+            : !isConnected
+              ? "Connect Wallet First"
+              : cofheState !== "ready"
+                ? "Waiting for Encryption..."
+                : hasSubmitted
+                  ? "Already Submitted"
+                  : "Encrypt & Submit Salary"}
       </button>
     </div>
   );

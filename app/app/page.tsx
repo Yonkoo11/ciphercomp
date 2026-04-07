@@ -8,7 +8,11 @@ import { PercentileDisplay } from "../components/PercentileDisplay";
 
 export default function Home() {
   const { isConnected } = useAccount();
-  const [submitted, setSubmitted] = useState<{
+
+  // Track which role/location the user has selected or submitted for
+  // This persists across the session (but not page reload — that's fine,
+  // the form re-reads hasSubmitted from chain on mount)
+  const [activeRole, setActiveRole] = useState<{
     role: string;
     location: string;
   } | null>(null);
@@ -43,14 +47,14 @@ export default function Home() {
           <div className="grid gap-6 lg:grid-cols-2">
             <SalaryForm
               onSubmitted={(role, location) =>
-                setSubmitted({ role, location })
+                setActiveRole({ role, location })
               }
             />
 
-            {submitted ? (
+            {activeRole ? (
               <PercentileDisplay
-                role={submitted.role}
-                location={submitted.location}
+                role={activeRole.role}
+                location={activeRole.location}
               />
             ) : (
               <div className="card-glow rounded-xl bg-cipher-surface border border-cipher-border p-6 sm:p-8 flex items-center justify-center">
@@ -59,7 +63,7 @@ export default function Home() {
                     Submit your salary to see the distribution
                   </p>
                   <p className="text-cipher-muted/50 text-xs">
-                    Results appear after {5} people submit for the same role
+                    Results appear after 5 people submit for the same role
                   </p>
                 </div>
               </div>
