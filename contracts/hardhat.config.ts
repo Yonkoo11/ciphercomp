@@ -16,15 +16,15 @@ const config: HardhatUserConfig = {
 	defaultNetwork: 'hardhat',
 	networks: {
 		'arb-sepolia': {
-			url: process.env.ARBITRUM_SEPOLIA_RPC_URL || 'https://sepolia-rollup.arbitrum.io/rpc',
-			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+			url: process.env.ARBITRUM_SEPOLIA_RPC || 'https://sepolia-rollup.arbitrum.io/rpc',
+			accounts: process.env.POLY_PRIVATE_KEY ? [process.env.POLY_PRIVATE_KEY] : [],
 			chainId: 421614,
 			gasMultiplier: 1.2,
 			timeout: 60000,
 		},
 		'base-sepolia': {
 			url: process.env.BASE_SEPOLIA_RPC_URL || 'https://sepolia.base.org',
-			accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+			accounts: process.env.POLY_PRIVATE_KEY ? [process.env.POLY_PRIVATE_KEY] : [],
 			chainId: 84532,
 			gasMultiplier: 1.2,
 			timeout: 60000,
