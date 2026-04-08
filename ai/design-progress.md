@@ -28,7 +28,8 @@ Status: completed
 Selected: hybrid — P3 editorial approach + redacted headline + P1 blue→green color story + P1 two-panel layout
 
 ## Phase 4: Production Polish
-Status: pending
+Status: completed
+Notes: Hybrid built and deployed. Redacted headline + blue→green color + asymmetric layout.
 
 ## Phase 5: Final QA
 Status: pending
