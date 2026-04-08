@@ -20,7 +20,7 @@
 - [x] Frontend: providers, cofhe hook, contract hook, SalaryForm, PercentileDisplay
 - [x] Static build succeeds (Next.js 14 + wagmi v2 + cofhejs 0.3.1)
 - [x] Code review: fixed hash collision, tx timing, polling race condition
-- [ ] **BLOCKED: Deploy to Arb Sepolia** — wallet 0x296...ceB has 0 ETH, need faucet
+- [x] Deployed to Arb Sepolia: 0x33985bb17A129f104684095aFbd1faB68C3c1245 (15 roles configured)
 - [ ] End-to-end demo works in browser with real wallet
 - [ ] /design for visual polish
 - [ ] GitHub Pages deployment
