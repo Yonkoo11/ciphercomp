@@ -22,7 +22,7 @@ export const arbSepolia = defineChain({
 // Deployed contract address (update after deployment)
 export const SALARY_BENCHMARK_ADDRESS = (process.env
   .NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  "0x0000000000000000000000000000000000000000") as `0x${string}`;
+  "0x33985bb17A129f104684095aFbd1faB68C3c1245") as `0x${string}`;
 
 export const SALARY_BENCHMARK_ABI = SalaryBenchmarkABI as readonly Record<
   string,
