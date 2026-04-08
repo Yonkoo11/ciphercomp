@@ -13,22 +13,22 @@ export function Header() {
   const wrongNetwork = isConnected && chain?.id !== arbSepolia.id;
 
   return (
-    <header className="border-b border-cipher-border/50 bg-cipher-bg/80 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cipher-accent/20 to-cipher-green/20 flex items-center justify-center">
-            <span className="text-cipher-accent font-mono text-sm font-bold">
-              C
-            </span>
+    <header className="relative z-10 border-b border-[rgba(255,255,255,0.06)]">
+      <div className="max-w-[960px] mx-auto px-6 py-5 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-[26px] h-[26px] rounded-[5px] bg-sealed flex items-center justify-center">
+            <span className="font-mono text-[12px] font-bold text-white">C</span>
           </div>
-          <h1 className="text-lg font-semibold tracking-tight">CipherComp</h1>
+          <span className="text-[15px] font-semibold tracking-[-0.01em] text-t-1">
+            CipherComp
+          </span>
         </div>
 
         <div className="flex items-center gap-3">
           {wrongNetwork && (
             <button
               onClick={() => switchChain({ chainId: arbSepolia.id })}
-              className="px-3 py-1.5 text-xs font-medium bg-cipher-yellow/10 text-cipher-yellow rounded-lg border border-cipher-yellow/20 hover:bg-cipher-yellow/20 transition-colors"
+              className="px-3 py-1.5 text-[13px] font-medium text-warn bg-warn/5 border border-warn/15 rounded-md hover:bg-warn/10 transition-colors"
             >
               Switch Network
             </button>
@@ -37,14 +37,14 @@ export function Header() {
           {isConnected ? (
             <button
               onClick={() => disconnect()}
-              className="px-4 py-2 text-sm font-medium bg-cipher-surface border border-cipher-border rounded-lg hover:border-cipher-muted/50 transition-colors font-mono"
+              className="px-3.5 py-[7px] text-[13px] font-mono font-medium text-t-2 bg-surface border border-strong rounded-md hover:border-t-3 transition-colors"
             >
               {address?.slice(0, 6)}...{address?.slice(-4)}
             </button>
           ) : (
             <button
               onClick={() => connect({ connector: injected() })}
-              className="px-4 py-2 text-sm font-medium bg-cipher-accent/10 text-cipher-accent border border-cipher-accent/20 rounded-lg hover:bg-cipher-accent/20 transition-colors"
+              className="px-3.5 py-[7px] text-[13px] font-medium text-t-2 border border-strong rounded-md hover:text-t-1 hover:border-sealed/30 transition-colors"
             >
               Connect Wallet
             </button>

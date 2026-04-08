@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CipherComp — Proposal 3: Redacted</title>
+<style>
+  /* PROPOSAL 3: REDACTED
+     Metaphor: a redacted document — most data is blacked out, only aggregates peek through
+     Influenced by: Signal (extreme simplicity), Linear (typography as design)
+     DNA: REDACT-EDITORIAL-MONO-SPARSE-TYPE
+     Key difference: typography IS the design. Minimal chrome. The form is almost a terminal.
+     The redaction motif (blacked-out text) is the signature element.
+  */
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #09090b;
+    --surface: #111113;
+    --text-1: #e4e4e7;
+    --text-2: #a1a1aa;
+    --text-3: #52525b;
+    --text-4: #27272a;
+    --accent: #3b82f6;
+    --accent-soft: rgba(59, 130, 246, 0.08);
+    --green: #22c55e;
+    --green-soft: rgba(34, 197, 94, 0.08);
+    --border: rgba(255,255,255, 0.06);
+    --redact: #18181b; /* the "blacked out" bars */
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Subtle noise only, no gradient glow — this design is sparse */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.04;
+  }
+
+  .page { position: relative; z-index: 1; max-width: 580px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── HEADER: just text ── */
+  header {
+    padding: 24px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .wordmark {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+  }
+  .connect {
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-3);
+    background: none;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  /* ── HERO: editorial, heavy type ── */
+  .hero {
+    padding: 80px 0 48px;
+  }
+  .hero h1 {
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    margin-bottom: 24px;
+  }
+  /* The redacted word — a blacked-out bar with text peeking */
+  .redacted {
+    background: var(--redact);
+    padding: 2px 8px;
+    border-radius: 2px;
+    color: var(--text-4);
+    transition: all 300ms;
+  }
+  .hero p {
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--text-2);
+    max-width: 440px;
+  }
+
+  /* ── NEGATION LIST ── */
+  .promises {
+    padding: 32px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .promises ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .promises li {
+    font-size: 15px;
+    color: var(--text-2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .promises li::before {
+    content: '—';
+    color: var(--text-4);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── FORM: terminal-esque ── */
+  .input-section {
+    margin-bottom: 48px;
+  }
+  .input-section h2 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+  .input-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .input-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .input-group {
+    flex: 1;
+  }
+  .input-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .input-group select, .input-group input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text-1);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+  }
+  .input-group input {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+  }
+  .input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .input-footer .note {
+    font-size: 12px;
+    color: var(--text-3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .submit {
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--text-1);
+    color: var(--bg);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  /* ── RESULTS: data table, no cards ── */
+  .output-section {
+    margin-bottom: 64px;
+  }
+  .output-section h2 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .output-section .context-line {
+    font-size: 14px;
+    color: var(--text-2);
+    margin-bottom: 16px;
+  }
+  .output-section .context-line em {
+    color: var(--green);
+    font-style: normal;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .data-table tr {
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 10px 0;
+    font-size: 14px;
+    vertical-align: middle;
+  }
+  .data-table .thresh {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-2);
+    width: 110px;
+  }
+  .data-table .bar-cell {
+    padding: 10px 16px;
+  }
+  .bar-track {
+    height: 4px;
+    background: var(--redact);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar-value {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    opacity: 0.7;
+  }
+  .data-table .pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-1);
+    width: 50px;
+    text-align: right;
+  }
+  .data-table .hidden-row .pct {
+    color: var(--text-4);
+  }
+  .data-table .hidden-row .thresh {
+    color: var(--text-3);
+  }
+
+  /* ── FOOTER ── */
+  .explanation {
+    padding: 48px 0;
+    border-top: 1px solid var(--border);
+  }
+  .explanation p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-3);
+    max-width: 480px;
+  }
+  .explanation p + p { margin-top: 12px; }
+
+  footer {
+    padding: 16px 0 32px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-4);
+    letter-spacing: 0.03em;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <span class="wordmark">CIPHERCOMP</span>
+    <button class="connect">0x29...ceB</button>
+  </header>
+
+  <section class="hero">
+    <h1>Your salary<br>is <span class="redacted">private</span>.</h1>
+    <p>Encrypted in your browser. Computed on-chain as ciphertext. Only aggregate counts come out. Nobody sees your number.</p>
+  </section>
+
+  <div class="promises">
+    <ul>
+      <li>No plaintext salary stored anywhere</li>
+      <li>No third-party data sharing</li>
+      <li>No individual data ever revealed</li>
+      <li>Fully homomorphic encryption on Fhenix</li>
+    </ul>
+  </div>
+
+  <section class="input-section">
+    <h2>Your submission</h2>
+    <div class="input-card">
+      <div class="input-row">
+        <div class="input-group">
+          <label>Role</label>
+          <select><option>Software Engineer</option></select>
+        </div>
+        <div class="input-group">
+          <label>Metro</label>
+          <select><option>San Francisco</option></select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Annual Salary</label>
+        <input type="text" value="145000" placeholder="120000">
+      </div>
+      <div class="input-footer">
+        <span class="note">3/5 submitted · 2 more to unlock</span>
+        <button class="submit">Seal & Submit</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="output-section">
+    <h2>Distribution</h2>
+    <p class="context-line">Software Engineer · San Francisco · <em>7 submissions</em></p>
+
+    <table class="data-table">
+      <tr>
+        <td class="thresh">$65,000+</td>
+        <td class="bar-cell"><div class="bar-track"><div class="bar-value" style="width:100%"></div></div></td>
+        <td class="pct">100%</td>
+      </tr>
+      <tr>
+        <td class="thresh">$105,000+</td>
+        <td class="bar-cell"><div class="bar-track"><div class="bar-value" style="width:86%"></div></div></td>
+        <td class="pct">86%</td>
+      </tr>
+      <tr>
+        <td class="thresh">$130,000+</td>
+        <td class="bar-cell"><div class="bar-track"><div class="bar-value" style="width:71%"></div></div></td>
+        <td class="pct">71%</td>
+      </tr>
+      <tr>
+        <td class="thresh">$160,000+</td>
+        <td class="bar-cell"><div class="bar-track"><div class="bar-value" style="width:43%"></div></div></td>
+        <td class="pct">43%</td>
+      </tr>
+      <tr>
+        <td class="thresh">$195,000+</td>
+        <td class="bar-cell"><div class="bar-track"><div class="bar-value" style="width:29%"></div></div></td>
+        <td class="pct">29%</td>
+      </tr>
+      <tr>
+        <td class="thresh">$240,000+</td>
+        <td class="bar-cell"><div class="bar-track"><div class="bar-value" style="width:14%"></div></div></td>
+        <td class="pct">14%</td>
+      </tr>
+      <tr class="hidden-row">
+        <td class="thresh">$320,000+</td>
+        <td class="bar-cell"><div class="bar-track"></div></td>
+        <td class="pct">—</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="explanation">
+    <p>In January 2025, the DOJ and FTC warned that sharing compensation data through third parties may violate antitrust law. Glassdoor and Pave process salaries in plaintext.</p>
+    <p>CipherComp uses fully homomorphic encryption. The smart contract computes on ciphertext without ever decrypting individual salaries. Only aggregate bucket counts are revealed.</p>
+  </section>
+
+  <footer>FHENIX COFHE · ARB SEPOLIA · FHE EUINT64 · BLS OEWS</footer>
+</div>
+</body>
+</html>

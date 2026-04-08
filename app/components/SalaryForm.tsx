@@ -35,14 +35,13 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
   const { isLoading: txPending, isSuccess: txConfirmed } =
     useWaitForTransactionReceipt({ hash: txHash });
 
-  // Wait for tx confirmation before notifying parent and refreshing state
   useEffect(() => {
     if (txConfirmed && role && location) {
       refetchTotal();
       refetchSubmitted();
       onSubmitted(role, location);
     }
-  }, [txConfirmed]); // intentionally minimal deps — fires once on confirm
+  }, [txConfirmed]);
 
   const salaryNum = parseInt(salary.replace(/,/g, ""), 10);
   const validSalary = !isNaN(salaryNum) && salaryNum >= 10000 && salaryNum <= 1000000;
@@ -66,7 +65,6 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
       const encrypted = await encryptSalary(BigInt(salaryNum));
       const hash = await submitSalary(encrypted, role, location);
       setTxHash(hash);
-      // Don't call onSubmitted here — wait for tx receipt in useEffect above
     } catch (err: any) {
       setError(err?.shortMessage || err?.message || "Transaction failed");
     } finally {
@@ -75,23 +73,20 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
   }
 
   return (
-    <div className="card-glow rounded-xl bg-cipher-surface border border-cipher-border p-6 sm:p-8 animate-fade-up">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-1">Submit Your Salary</h2>
-        <p className="text-cipher-muted text-sm">
-          Your salary is encrypted before it leaves your browser. Nobody sees
-          the number, not even us.
-        </p>
-      </div>
+    <div className="card-sealed rounded-xl bg-surface border border-[rgba(255,255,255,0.06)] p-7">
+      <h2 className="text-[16px] font-semibold mb-1">Submit your salary</h2>
+      <p className="text-[13px] text-t-3 mb-6">
+        Encrypted before it leaves your device
+      </p>
 
-      {/* Encryption status */}
+      {/* Cofhe status */}
       {isConnected && cofheState !== "ready" && (
-        <div className="mb-4 p-3 rounded-lg bg-cipher-accent/5 border border-cipher-accent/10">
-          <p className="text-sm text-cipher-muted">
+        <div className="mb-4 p-3 rounded-lg bg-sealed/5 border border-sealed/10">
+          <p className="text-[13px] text-t-3">
             {cofheState === "initializing"
               ? "Setting up encryption..."
               : cofheState === "error"
-                ? `Encryption error: ${cofheError}`
+                ? `Error: ${cofheError}`
                 : "Connecting to encryption network..."}
           </p>
         </div>
@@ -99,126 +94,89 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
 
       {/* Role */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-cipher-muted mb-1.5">
+        <label className="block text-[13px] font-medium text-t-2 mb-1.5">
           Job Role
         </label>
         <select
           value={role}
-          onChange={(e) => {
-            setRole(e.target.value);
-            setLocation("");
-            setTxHash(undefined);
-          }}
-          className="w-full bg-cipher-bg border border-cipher-border rounded-lg px-4 py-2.5 text-sm focus:border-cipher-accent/50 transition-colors appearance-none"
+          onChange={(e) => { setRole(e.target.value); setLocation(""); setTxHash(undefined); }}
+          className="w-full bg-base border border-strong rounded-lg px-3.5 py-2.5 text-[15px] text-t-1 outline-none focus:border-sealed/40 transition-colors appearance-none"
         >
-          <option value="">Select your role</option>
+          <option value="">Select role</option>
           {roles.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
+            <option key={r} value={r}>{r}</option>
           ))}
         </select>
       </div>
 
       {/* Location */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-cipher-muted mb-1.5">
+        <label className="block text-[13px] font-medium text-t-2 mb-1.5">
           Metro Area
         </label>
         <select
           value={location}
-          onChange={(e) => {
-            setLocation(e.target.value);
-            setTxHash(undefined);
-          }}
+          onChange={(e) => { setLocation(e.target.value); setTxHash(undefined); }}
           disabled={!role}
-          className="w-full bg-cipher-bg border border-cipher-border rounded-lg px-4 py-2.5 text-sm focus:border-cipher-accent/50 transition-colors appearance-none disabled:opacity-40"
+          className="w-full bg-base border border-strong rounded-lg px-3.5 py-2.5 text-[15px] text-t-1 outline-none focus:border-sealed/40 transition-colors appearance-none disabled:opacity-40"
         >
-          <option value="">Select metro area</option>
+          <option value="">Select metro</option>
           {locations.map((l) => (
-            <option key={l} value={l}>
-              {l}
-            </option>
+            <option key={l} value={l}>{l}</option>
           ))}
         </select>
       </div>
 
       {/* Salary */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-cipher-muted mb-1.5">
-          Annual Salary (USD)
+      <div className="mb-5">
+        <label className="block text-[13px] font-medium text-t-2 mb-1.5">
+          Annual Salary
         </label>
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-cipher-muted text-sm">
-            $
-          </span>
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-t-3 text-[15px]">$</span>
           <input
             type="number"
             value={salary}
             onChange={(e) => setSalary(e.target.value)}
-            placeholder="120000"
+            placeholder="130000"
             min={10000}
             max={1000000}
-            className="w-full bg-cipher-bg border border-cipher-border rounded-lg pl-8 pr-4 py-2.5 text-sm font-mono focus:border-cipher-accent/50 transition-colors"
+            className="w-full bg-base border border-strong rounded-lg pl-7 pr-3.5 py-2.5 text-[16px] font-mono font-medium text-t-1 outline-none focus:border-sealed/40 transition-colors"
           />
         </div>
         {salary && !validSalary && (
-          <p className="text-cipher-red text-xs mt-1">
-            Enter a salary between $10,000 and $1,000,000
-          </p>
+          <p className="text-danger text-[12px] mt-1.5">Between $10,000 and $1,000,000</p>
         )}
       </div>
 
       {/* Submission count */}
       {role && location && total !== undefined && (
-        <div className="mb-4 flex items-center gap-2 text-xs text-cipher-muted">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              Number(total) >= MIN_SAMPLE
-                ? "bg-cipher-green"
-                : "bg-cipher-yellow animate-pulse-soft"
-            }`}
-          />
-          <span>
-            {Number(total)} submission{Number(total) !== 1 ? "s" : ""} for{" "}
-            {role} in {location}
-            {Number(total) < MIN_SAMPLE &&
-              ` (need ${MIN_SAMPLE - Number(total)} more to see results)`}
-          </span>
+        <div className="flex items-center gap-2 text-[13px] text-t-3 mb-4">
+          <div className={`w-[6px] h-[6px] rounded-full ${Number(total) >= MIN_SAMPLE ? "bg-revealed" : "bg-warn pulse"}`} />
+          {Number(total)} of {MIN_SAMPLE} needed
+          {Number(total) >= MIN_SAMPLE && <span className="text-revealed ml-1">Ready</span>}
         </div>
       )}
 
-      {/* Already submitted */}
+      {/* Status messages */}
       {hasSubmitted && (
-        <div className="mb-4 p-3 rounded-lg bg-cipher-green/5 border border-cipher-green/10">
-          <p className="text-sm text-cipher-green">
-            You already submitted for this role and location.
-          </p>
+        <div className="mb-4 p-3 rounded-lg bg-revealed/5 border border-revealed/10">
+          <p className="text-[13px] text-revealed">Already submitted for this role.</p>
         </div>
       )}
-
-      {/* Error */}
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-cipher-red/5 border border-cipher-red/10">
-          <p className="text-sm text-cipher-red">{error}</p>
+        <div className="mb-4 p-3 rounded-lg bg-danger/5 border border-danger/10">
+          <p className="text-[13px] text-danger">{error}</p>
         </div>
       )}
-
-      {/* Tx pending */}
       {txPending && (
-        <div className="mb-4 p-3 rounded-lg bg-cipher-accent/5 border border-cipher-accent/10">
-          <p className="text-sm text-cipher-accent">
-            Transaction submitted. Waiting for confirmation...
-          </p>
+        <div className="mb-4 p-3 rounded-lg bg-sealed/5 border border-sealed/10">
+          <p className="text-[13px] text-sealed">Confirming on-chain...</p>
         </div>
       )}
-
-      {/* Success */}
       {txConfirmed && (
-        <div className="mb-4 p-3 rounded-lg bg-cipher-green/5 border border-cipher-green/10">
-          <p className="text-sm text-cipher-green">
-            Salary encrypted and submitted. Your data is private.
-          </p>
+        <div className="mb-4 p-3 rounded-lg bg-revealed/5 border border-revealed/10">
+          <p className="text-[13px] text-revealed">Sealed and submitted. Your data is private.</p>
         </div>
       )}
 
@@ -226,19 +184,19 @@ export function SalaryForm({ onSubmitted }: SalaryFormProps) {
       <button
         onClick={handleSubmit}
         disabled={!canSubmit}
-        className="w-full py-3 px-4 rounded-lg font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-cipher-accent/10 text-cipher-accent border border-cipher-accent/20 hover:bg-cipher-accent/20 active:scale-[0.98]"
+        className="w-full py-3 text-[15px] font-semibold bg-sealed text-white rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_24px_rgba(59,124,245,0.2)] active:scale-[0.98]"
       >
         {submitting
           ? "Encrypting..."
           : txPending
-            ? "Confirming Transaction..."
+            ? "Confirming..."
             : !isConnected
-              ? "Connect Wallet First"
+              ? "Connect Wallet"
               : cofheState !== "ready"
-                ? "Waiting for Encryption..."
+                ? "Initializing..."
                 : hasSubmitted
                   ? "Already Submitted"
-                  : "Encrypt & Submit Salary"}
+                  : "Seal & Submit"}
       </button>
     </div>
   );

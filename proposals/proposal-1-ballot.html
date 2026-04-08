@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CipherComp — Proposal 1: The Ballot Box</title>
+<style>
+  /* PROPOSAL 1: THE BALLOT BOX
+     Metaphor: institutional ballot — sealed input, aggregate reveal
+     Influenced by: Signal (negation messaging, simplicity), Glassdoor (percentile bars)
+     DNA: BALLOT-INST-BLUE2GREEN-SERIOUS-MINIMAL
+  */
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg-base: #0a0b10;
+    --bg-surface: #111318;
+    --bg-elevated: #191c24;
+    --bg-hover: #1f2330;
+    --text-primary: #eceef3;
+    --text-secondary: #9098a8;
+    --text-muted: #5c6478;
+    --text-ghost: #3a4050;
+    --sealed: #3b7cf5;       /* your encrypted data */
+    --sealed-dim: #1a3570;
+    --sealed-glow: rgba(59, 124, 245, 0.12);
+    --revealed: #10b981;     /* decrypted aggregate */
+    --revealed-dim: #064e3b;
+    --revealed-glow: rgba(16, 185, 129, 0.10);
+    --border: rgba(255,255,255, 0.06);
+    --border-strong: rgba(255,255,255, 0.10);
+    --caution: #f59e0b;
+  }
+
+  body {
+    background: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'DM Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* Ambient background: visible blue glow top-left, green glow bottom-right */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 15% 10%, rgba(59, 124, 245, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 45%);
+  }
+
+  /* Noise texture at 4% */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.04;
+  }
+
+  .content { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── HEADER ── */
+  header {
+    padding: 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
+  .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--sealed);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 700;
+    color: #fff;
+  }
+  .connect-btn {
+    padding: 8px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+  .connect-btn:hover {
+    border-color: var(--sealed);
+    color: var(--text-primary);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 80px 0 60px;
+    max-width: 560px;
+  }
+  .hero h1 {
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+  }
+  .hero p {
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin-bottom: 32px;
+    max-width: 480px;
+  }
+  .negation {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  .negation span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .negation .x {
+    color: var(--sealed);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ── MAIN LAYOUT: asymmetric ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    padding: 40px 0;
+    align-items: start;
+  }
+
+  /* ── FORM PANEL (sealed side) ── */
+  .form-panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    box-shadow: 0 0 40px var(--sealed-glow), inset 0 1px 0 rgba(59, 124, 245, 0.06);
+  }
+  .form-panel h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .form-panel .subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .field select, .field input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 150ms;
+  }
+  .field select:focus, .field input:focus {
+    border-color: rgba(59, 124, 245, 0.4);
+  }
+  .field input::placeholder { color: var(--text-ghost); }
+
+  .salary-input-wrap {
+    position: relative;
+  }
+  .salary-input-wrap .prefix {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 15px;
+    pointer-events: none;
+  }
+  .salary-input-wrap input {
+    padding-left: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .submission-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 18px;
+  }
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--caution);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+  .dot.ready { background: var(--revealed); animation: none; }
+  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+  .submit-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--sealed);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 150ms;
+    box-shadow: 0 0 20px var(--sealed-glow);
+  }
+  .submit-btn:hover {
+    box-shadow: 0 0 30px rgba(59, 124, 245, 0.25);
+    transform: translateY(-1px);
+  }
+
+  /* ── RESULTS PANEL (revealed side) ── */
+  .results-panel {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+  }
+  .results-panel h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .results-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+  }
+  .results-meta .count { color: var(--revealed); }
+
+  .bucket {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: all 150ms;
+  }
+  .bucket:hover { border-color: var(--border-strong); background: var(--bg-elevated); }
+  .bucket.revealed {
+    border-color: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.03);
+  }
+
+  .bucket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .bucket-threshold {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .bucket-result {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .bucket-pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--revealed);
+  }
+  .bucket-count {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .bucket-hint {
+    font-size: 12px;
+    color: var(--text-ghost);
+  }
+
+  .bucket-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--bg-base);
+    overflow: hidden;
+  }
+  .bucket-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--sealed), var(--revealed));
+    transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ── LOCKED STATE ── */
+  .locked-state {
+    text-align: center;
+    padding: 48px 24px;
+  }
+  .locked-state .lock-icon {
+    width: 48px; height: 48px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: rgba(59, 124, 245, 0.08);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--sealed);
+    font-size: 22px;
+  }
+  .locked-state p {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .locked-state .threshold-bar {
+    margin: 20px auto 0;
+    max-width: 200px;
+    height: 4px;
+    background: var(--bg-base);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .locked-state .threshold-fill {
+    height: 100%;
+    background: var(--sealed);
+    border-radius: 2px;
+    width: 60%; /* 3 of 5 */
+  }
+
+  /* ── CONTEXT SECTION (below fold) ── */
+  .context {
+    padding: 60px 0;
+    border-top: 1px solid var(--border);
+  }
+  .context-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+  }
+  .context h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .context p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 24px 0;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-ghost);
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+<div class="content">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">C</div>
+      CipherComp
+    </div>
+    <button class="connect-btn">Connect Wallet</button>
+  </header>
+
+  <section class="hero">
+    <h1>Your salary is yours.<br>Keep it that way.</h1>
+    <p>See where you stand in the market without revealing what you earn. Your salary is encrypted in your browser. The chain computes on ciphertext. Only aggregate counts come out.</p>
+    <div class="negation">
+      <span><span class="x">×</span> No one sees your salary. Not us.</span>
+      <span><span class="x">×</span> No plaintext on any server. Ever.</span>
+      <span><span class="x">×</span> No third-party data sharing risk.</span>
+    </div>
+  </section>
+
+  <div class="main-grid">
+    <!-- SEALED SIDE: Form -->
+    <div class="form-panel">
+      <h2>Submit your salary</h2>
+      <p class="subtitle">Encrypted before it leaves your device</p>
+
+      <div class="field">
+        <label>Job Role</label>
+        <select>
+          <option>Software Engineer</option>
+          <option>Data Scientist</option>
+          <option>Product Manager</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Metro Area</label>
+        <select>
+          <option>San Francisco</option>
+          <option>New York</option>
+          <option>Austin</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Annual Salary</label>
+        <div class="salary-input-wrap">
+          <span class="prefix">$</span>
+          <input type="text" placeholder="130,000" value="145000">
+        </div>
+      </div>
+
+      <div class="submission-count">
+        <div class="dot"></div>
+        3 submissions for Software Engineer in San Francisco (need 2 more)
+      </div>
+
+      <button class="submit-btn">Seal & Submit</button>
+    </div>
+
+    <!-- REVEALED SIDE: Results (showing revealed state) -->
+    <div class="results-panel">
+      <h2>Salary Distribution</h2>
+      <p class="results-meta">Software Engineer in San Francisco <span class="count">· 7 submissions</span></p>
+
+      <div class="bucket revealed">
+        <div class="bucket-header">
+          <span class="bucket-threshold">$65,000+</span>
+          <div class="bucket-result">
+            <span class="bucket-pct">100%</span>
+            <span class="bucket-count">7/7</span>
+          </div>
+        </div>
+        <div class="bucket-bar"><div class="bucket-bar-fill" style="width:100%"></div></div>
+      </div>
+
+      <div class="bucket revealed">
+        <div class="bucket-header">
+          <span class="bucket-threshold">$105,000+</span>
+          <div class="bucket-result">
+            <span class="bucket-pct">86%</span>
+            <span class="bucket-count">6/7</span>
+          </div>
+        </div>
+        <div class="bucket-bar"><div class="bucket-bar-fill" style="width:86%"></div></div>
+      </div>
+
+      <div class="bucket revealed">
+        <div class="bucket-header">
+          <span class="bucket-threshold">$130,000+</span>
+          <div class="bucket-result">
+            <span class="bucket-pct">71%</span>
+            <span class="bucket-count">5/7</span>
+          </div>
+        </div>
+        <div class="bucket-bar"><div class="bucket-bar-fill" style="width:71%"></div></div>
+      </div>
+
+      <div class="bucket revealed">
+        <div class="bucket-header">
+          <span class="bucket-threshold">$160,000+</span>
+          <div class="bucket-result">
+            <span class="bucket-pct">43%</span>
+            <span class="bucket-count">3/7</span>
+          </div>
+        </div>
+        <div class="bucket-bar"><div class="bucket-bar-fill" style="width:43%"></div></div>
+      </div>
+
+      <div class="bucket revealed">
+        <div class="bucket-header">
+          <span class="bucket-threshold">$195,000+</span>
+          <div class="bucket-result">
+            <span class="bucket-pct">29%</span>
+            <span class="bucket-count">2/7</span>
+          </div>
+        </div>
+        <div class="bucket-bar"><div class="bucket-bar-fill" style="width:29%"></div></div>
+      </div>
+
+      <div class="bucket">
+        <div class="bucket-header">
+          <span class="bucket-threshold">$240,000+</span>
+          <span class="bucket-hint">Click to reveal</span>
+        </div>
+      </div>
+
+      <div class="bucket">
+        <div class="bucket-header">
+          <span class="bucket-threshold">$320,000+</span>
+          <span class="bucket-hint">Click to reveal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="context">
+    <div class="context-grid">
+      <div>
+        <h3>The Problem</h3>
+        <p>In January 2025, the DOJ and FTC warned that sharing compensation data through third parties may violate antitrust law. Glassdoor, Pave, and every salary survey processes your data in plaintext. Someone at those companies can see what you earn.</p>
+      </div>
+      <div>
+        <h3>How This Works</h3>
+        <p>Your salary is encrypted using fully homomorphic encryption (FHE) before it leaves your browser. The smart contract on Fhenix computes on ciphertext. It counts how many salaries fall above each threshold without ever decrypting an individual number. Only the aggregate count is revealed.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Fhenix CoFHE · Arbitrum Sepolia · FHE euint64 · BLS OEWS boundaries
+  </footer>
+</div>
+</body>
+</html>

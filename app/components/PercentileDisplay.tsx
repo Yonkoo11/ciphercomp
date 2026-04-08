@@ -35,10 +35,9 @@ export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
   const totalNum = Number(total ?? 0);
   const canSeeResults = totalNum >= MIN_SAMPLE && hasSubmitted;
 
-  // Poll a specific bucket for decryption result
   const pollBucket = useCallback(
     async (bucket: number) => {
-      if (!publicClient) return;
+      if (!publicClient) return false;
       try {
         const data = await publicClient.readContract({
           address: SALARY_BENCHMARK_ADDRESS,
@@ -67,44 +66,32 @@ export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
     [publicClient, role, location, totalNum]
   );
 
-  // Polling effect — only runs for the specific bucket being decrypted
   useEffect(() => {
     if (polling === null) return;
     const bucket = polling;
     let active = true;
-
     const interval = setInterval(async () => {
       if (!active) return;
       const done = await pollBucket(bucket);
-      if (done && active) {
-        clearInterval(interval);
-      }
+      if (done && active) clearInterval(interval);
     }, 3000);
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
+    return () => { active = false; clearInterval(interval); };
   }, [polling, pollBucket]);
 
-  async function handleRequestPercentile(bucket: number) {
-    // If we already have this result, don't re-request
+  async function handleRequest(bucket: number) {
     if (results[bucket]) return;
-
     setRequesting(bucket);
     setError(null);
-
     try {
       await requestPercentile(role, location, bucket);
       setPolling(bucket);
     } catch (err: any) {
-      setError(err?.shortMessage || err?.message || "Failed to request");
+      setError(err?.shortMessage || err?.message || "Request failed");
     } finally {
       setRequesting(null);
     }
   }
 
-  // Request all buckets at once
   async function handleRequestAll() {
     setError(null);
     for (let i = 0; i < NUM_BUCKETS; i++) {
@@ -112,18 +99,15 @@ export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
       try {
         setRequesting(i);
         await requestPercentile(role, location, i);
-        // Start polling last requested bucket — earlier ones will resolve naturally
       } catch (err: any) {
         setError(err?.shortMessage || err?.message || "Failed on bucket " + (i + 1));
         break;
       }
     }
     setRequesting(null);
-    // Poll all unrequested buckets
-    setPolling(0); // will trigger polling effect
+    setPolling(0);
   }
 
-  // Reset results when role/location changes
   useEffect(() => {
     setResults({});
     setPolling(null);
@@ -135,61 +119,52 @@ export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
   const allResolved = Object.keys(results).length === NUM_BUCKETS;
 
   return (
-    <div className="card-glow rounded-xl bg-cipher-surface border border-cipher-border p-6 sm:p-8 animate-fade-up">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold mb-1">Salary Distribution</h2>
-            <p className="text-cipher-muted text-sm">
-              {role} in {location}
-              {totalNum > 0 && (
-                <span className="ml-2 text-cipher-accent">
-                  ({totalNum} submission{totalNum !== 1 ? "s" : ""})
-                </span>
-              )}
-            </p>
-          </div>
-          {canSeeResults && !allResolved && (
-            <button
-              onClick={handleRequestAll}
-              disabled={requesting !== null}
-              className="px-3 py-1.5 text-xs font-medium bg-cipher-accent/10 text-cipher-accent rounded-lg border border-cipher-accent/20 hover:bg-cipher-accent/20 transition-colors disabled:opacity-40"
-            >
-              {requesting !== null ? "Requesting..." : "Reveal All"}
-            </button>
-          )}
+    <div className="card-flat rounded-xl bg-surface border border-[rgba(255,255,255,0.06)] p-7">
+      <div className="flex items-start justify-between mb-5">
+        <div>
+          <h2 className="text-[16px] font-semibold mb-1">Salary Distribution</h2>
+          <p className="text-[13px] text-t-3">
+            {role} &middot; {location}
+            {totalNum > 0 && (
+              <span className="text-revealed ml-1.5">&middot; {totalNum} submissions</span>
+            )}
+          </p>
         </div>
+        {canSeeResults && !allResolved && (
+          <button
+            onClick={handleRequestAll}
+            disabled={requesting !== null}
+            className="px-3 py-1.5 text-[12px] font-medium text-sealed bg-sealed/5 border border-sealed/15 rounded-md hover:bg-sealed/10 transition-colors disabled:opacity-40"
+          >
+            {requesting !== null ? "Requesting..." : "Reveal All"}
+          </button>
+        )}
       </div>
 
       {!canSeeResults ? (
-        <div className="text-center py-8">
-          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-cipher-accent/10 flex items-center justify-center">
-            <svg
-              className="w-6 h-6 text-cipher-accent"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
+        <div className="text-center py-10">
+          <div className="w-11 h-11 mx-auto mb-4 rounded-full bg-sealed/8 flex items-center justify-center">
+            <svg className="w-5 h-5 text-sealed" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
             </svg>
           </div>
-          <p className="text-cipher-muted text-sm mb-2">
+          <p className="text-t-3 text-[14px] mb-1">
             {!hasSubmitted
-              ? "Submit your salary first to see where you stand."
-              : `Need ${MIN_SAMPLE - totalNum} more submissions to unlock results.`}
+              ? "Submit your salary first."
+              : `${MIN_SAMPLE - totalNum} more submissions to unlock.`}
           </p>
-          <p className="text-cipher-muted/60 text-xs">
-            At least {MIN_SAMPLE} people need to submit before anyone can see
-            percentiles. This protects individual privacy.
-          </p>
+          {/* Threshold progress bar */}
+          {totalNum > 0 && totalNum < MIN_SAMPLE && (
+            <div className="mt-4 mx-auto max-w-[180px] h-[3px] bg-base rounded-full overflow-hidden">
+              <div
+                className="h-full bg-sealed rounded-full transition-all duration-500"
+                style={{ width: `${(totalNum / MIN_SAMPLE) * 100}%` }}
+              />
+            </div>
+          )}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {boundaries.map((boundary, i) => {
             const result = results[i];
             const isRequesting = requesting === i;
@@ -198,58 +173,48 @@ export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
             return (
               <button
                 key={i}
-                onClick={() => handleRequestPercentile(i)}
+                onClick={() => handleRequest(i)}
                 disabled={isRequesting || !!result}
                 className={`w-full text-left p-3 rounded-lg border transition-all ${
                   result
-                    ? "border-cipher-accent/20 bg-cipher-accent/5"
-                    : "border-cipher-border/50 bg-cipher-bg/50 hover:border-cipher-border"
-                } ${isRequesting ? "opacity-50 cursor-wait" : ""} ${
-                  result ? "cursor-default" : ""
-                }`}
+                    ? "border-revealed/12 bg-revealed/[0.02]"
+                    : "border-[rgba(255,255,255,0.06)] bg-base/50 hover:border-strong"
+                } ${isRequesting ? "opacity-50" : ""} ${result ? "cursor-default" : "cursor-pointer"}`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-cipher-muted font-mono">
-                      {formatSalary(boundary)}+
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-[13px] font-medium text-t-2">
+                    {formatSalary(boundary)}+
+                  </span>
 
                   {isRequesting && (
-                    <span className="text-xs text-cipher-yellow">
-                      Requesting...
-                    </span>
+                    <span className="text-[12px] text-warn">Requesting...</span>
                   )}
-
                   {isPolling && (
-                    <span className="text-xs text-cipher-yellow animate-pulse">
-                      Decrypting on Fhenix...
-                    </span>
+                    <span className="text-[12px] text-warn pulse">Decrypting...</span>
                   )}
-
                   {result && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono text-cipher-accent font-semibold">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono text-[15px] font-bold text-revealed">
                         {result.percentile}%
                       </span>
-                      <span className="text-xs text-cipher-muted">
-                        ({result.count}/{totalNum})
+                      <span className="text-[12px] text-t-3">
+                        {result.count}/{totalNum}
                       </span>
                     </div>
                   )}
-
                   {!result && !isRequesting && !isPolling && (
-                    <span className="text-xs text-cipher-muted/50">
-                      Click to reveal
-                    </span>
+                    <span className="text-[12px] text-t-4">reveal</span>
                   )}
                 </div>
 
                 {result && (
-                  <div className="mt-2 h-1.5 rounded-full bg-cipher-bg overflow-hidden">
+                  <div className="h-[4px] rounded-[2px] bg-base overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-cipher-accent to-cipher-green transition-all duration-700"
-                      style={{ width: `${result.percentile}%` }}
+                      className="h-full rounded-[2px] bar-animate"
+                      style={{
+                        width: `${result.percentile}%`,
+                        background: `linear-gradient(90deg, var(--sealed), var(--revealed))`,
+                      }}
                     />
                   </div>
                 )}
@@ -260,8 +225,8 @@ export function PercentileDisplay({ role, location }: PercentileDisplayProps) {
       )}
 
       {error && (
-        <div className="mt-4 p-3 rounded-lg bg-cipher-red/5 border border-cipher-red/10">
-          <p className="text-sm text-cipher-red">{error}</p>
+        <div className="mt-4 p-3 rounded-lg bg-danger/5 border border-danger/10">
+          <p className="text-[13px] text-danger">{error}</p>
         </div>
       )}
     </div>

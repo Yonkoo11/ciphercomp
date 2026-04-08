@@ -9,40 +9,27 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        cipher: {
-          bg: "#0a0c10",
-          surface: "#12151c",
-          border: "#1e2330",
-          text: "#e8ecf2",
-          muted: "#6b7a94",
-          accent: "#4f8fff",
-          green: "#00d68f",
-          yellow: "#ffc145",
-          red: "#ff4d6a",
-        },
+        base: "#09090b",
+        surface: "#111113",
+        elevated: "#19191d",
+        "t-1": "#eceef3",
+        "t-2": "#a0a8b8",
+        "t-3": "#5c6478",
+        "t-4": "#333a4a",
+        sealed: "#3b7cf5",
+        "sealed-dim": "#1a3570",
+        revealed: "#10b981",
+        "revealed-dim": "#064e3b",
+        warn: "#f59e0b",
+        danger: "#ef4444",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
       },
-      animation: {
-        "fade-up": "fadeUp 0.5s ease-out",
-        "fade-in": "fadeIn 0.3s ease-out",
-        "pulse-soft": "pulseSoft 3s ease-in-out infinite",
-      },
-      keyframes: {
-        fadeUp: {
-          "0%": { opacity: "0", transform: "translateY(12px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        fadeIn: {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
-        },
-        pulseSoft: {
-          "0%, 100%": { opacity: "0.4" },
-          "50%": { opacity: "0.8" },
-        },
+      borderColor: {
+        DEFAULT: "rgba(255, 255, 255, 0.06)",
+        strong: "rgba(255, 255, 255, 0.10)",
       },
     },
   },
